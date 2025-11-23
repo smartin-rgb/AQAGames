@@ -65,7 +65,22 @@
             cursor: pointer;
         }
 
-        /* Arcade timer */
+        /* Level explanation block */
+        #level-explanation {
+            background: #181825;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            border-left: 4px solid var(--highlight);
+            line-height: 1.4;
+        }
+        #level-explanation-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: var(--highlight);
+        }
+
+        /* Arcade timer (for arcade level) */
         #arcade-timer {
             background: #181825;
             border-radius: 6px;
@@ -351,6 +366,47 @@
             transform: none;
         }
 
+        /* Session summary + log export */
+        #session-summary {
+            text-align: left;
+            font-size: 0.9em;
+            margin-top: 15px;
+            background: #181825;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        #session-summary ul {
+            padding-left: 20px;
+        }
+        #session-log-container {
+            margin-top: 15px;
+            text-align: left;
+        }
+        #session-log-text {
+            width: 100%;
+            height: 140px;
+            background: #11111b;
+            color: var(--text);
+            border-radius: 6px;
+            border: 1px solid #585b70;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 0.8em;
+            resize: vertical;
+        }
+        #copy-log-btn {
+            margin-top: 8px;
+            font-size: 0.85em;
+            padding: 6px 16px;
+        }
+
+        /* Quiz timer in modal */
+        #quiz-timer {
+            margin-top: 5px;
+            font-size: 0.9em;
+            opacity: 0.85;
+        }
+
         @media (max-width: 600px) {
             .data-card {
                 padding: 12px 16px;
@@ -398,9 +454,17 @@
             </div>
         </div>
 
-        <div id="current-card-area"></div>
+        <!-- always-visible current level explanation -->
+        <div id="level-explanation">
+            <div id="level-explanation-title">Level 1 – The Perfect Hash</div>
+            <div id="level-explanation-body">
+                A hashing algorithm calculates an index from the key. Ideally, every key maps to a unique slot (no collisions).
+            </div>
+        </div>
 
-        <div id="feedback"></div>
+        <div id="current-card-area" aria-live="polite"></div>
+
+        <div id="feedback" aria-live="polite"></div>
 
         <div id="memory-grid" role="grid" aria-label="Hash table memory slots"></div>
     </div>
@@ -413,19 +477,25 @@
             <div id="modal-theory" style="background: #181825; padding: 15px; margin: 15px 0; font-size: 0.95em; text-align: left; border-left: 4px solid var(--highlight);">
                 <strong>Mission:</strong> Calculate the correct index using the hashing algorithm and click the memory slot to store the data.
             </div>
+
+            <!-- Quiz timer (shown only in quiz mode) -->
+            <div id="quiz-timer" class="hidden">
+                ⏱ Quiz time left: <span id="quiz-time-display">0</span>s
+            </div>
             
             <div id="quiz-area" class="hidden quiz-container"></div>
+
+            <!-- session summary & JSON export area -->
+            <div id="session-summary" class="hidden"></div>
+            <div id="session-log-container" class="hidden">
+                <h3 style="font-size:1em; margin-top:15px;">Session event log (JSON)</h3>
+                <textarea id="session-log-text" readonly></textarea>
+                <button id="copy-log-btn" class="start-btn" type="button">Copy session log</button>
+            </div>
 
             <button id="action-btn" class="start-btn" data-action="start">START LEVEL 1</button>
         </div>
     </div>
-
-    <!-- SOUND EFFECTS -->
-    <!-- Replace src paths with your actual files -->
-    <audio id="sound-correct" src="correct.mp3" preload="auto"></audio>
-    <audio id="sound-wrong" src="wrong.mp3" preload="auto"></audio>
-    <audio id="sound-levelup" src="levelup.mp3" preload="auto"></audio>
-    <audio id="sound-click" src="click.mp3" preload="auto"></audio>
 
     <script>
         // --- GAME CONFIGURATION & DATA ---
@@ -489,24 +559,45 @@
                 ]
             },
             {
+                name: "Word Wizard (Dictionaries)",
+                algorithm: "Dictionary: key → hash(key) → index",
+                theory: "A dictionary maps unique keys (like words) to values (like definitions). A hash table stores these pairs so that you can look up a word in O(1) time on average.",
+                mode: "dictionary",
+                tableSize: 11,
+                preLoadedData: [
+                    // key % 11 == index
+                    { key: 21, index: 10, word: "cat",   value: "A small domesticated animal" },
+                    { key: 34, index:  1, word: "tree",  value: "A tall plant with a trunk" },
+                    { key: 57, index:  2, word: "hash",  value: "Function that maps data to an index" },
+                    { key: 15, index:  4, word: "array", value: "A contiguous block of memory storing elements" }
+                ],
+                cards: [
+                    { key: 21, index: 10, word: "cat",   value: "A small domesticated animal" },
+                    { key: 34, index:  1, word: "tree",  value: "A tall plant with a trunk" },
+                    { key: 57, index:  2, word: "hash",  value: "Function that maps data to an index" },
+                    { key: 15, index:  4, word: "array", value: "A contiguous block of memory storing elements" }
+                ]
+            },
+            {
                 name: "Retro Arcade: Hash Invaders",
                 algorithm: "Index = Key MOD 11 (Linear Probing)",
                 theory: "Timed speed round! Random hash invaders fall in. Use Key MOD 11 with linear probing to place them before the timer hits zero.",
                 mode: "arcade",
                 tableSize: 11,
-                cards: [],           // generated dynamically
-                timeLimitMs: 30000   // 30 seconds
+                cards: [],
+                timeLimitMs: 30000
             },
             {
                 name: "BOSS LEVEL: EXAM SIMULATOR",
                 algorithm: "A-Level Theory",
-                theory: "Multiple-choice questions based on AQA-style hash table and dictionary questions.",
+                theory: "Multiple-choice questions based on AQA-style hash table and dictionary questions. Timed drill: keep going until the clock hits zero.",
                 mode: "quiz",
                 tableSize: 11,
                 cards: []
             }
         ];
 
+        // Extended question bank
         const examQuestions = [
             {
                 q: "A hash table uses the algorithm Index = Key MOD 10. At which index should a record with key 37 first be placed?",
@@ -568,6 +659,72 @@
                 ],
                 answer: 3,
                 explanation: "A well-designed hash table gives constant-time average lookups, O(1), because it jumps straight to the slot using the key."
+            },
+            {
+                q: "A hash table has 20 slots and currently stores 12 items. What term describes 12/20?",
+                options: [
+                    "Load factor",
+                    "Collision rate",
+                    "Hash value",
+                    "Overflow ratio"
+                ],
+                answer: 0,
+                explanation: "Load factor is number of items divided by table size."
+            },
+            {
+                q: "Which is an advantage of chaining over linear probing when the table becomes crowded?",
+                options: [
+                    "Chaining guarantees no collisions at all",
+                    "Chaining avoids long blocks of filled slots and keeps probing short",
+                    "Chaining removes the need for a hash function",
+                    "Chaining always keeps items in sorted order"
+                ],
+                answer: 1,
+                explanation: "Chaining stores colliding items in a list at one index, so other slots remain free and probe sequences stay short."
+            },
+            {
+                q: "What usually happens to performance as the load factor of a hash table gets very close to 1.0?",
+                options: [
+                    "Performance improves because the table is fully used",
+                    "Performance stays exactly the same",
+                    "Performance gets worse because collisions become much more frequent",
+                    "The table automatically deletes old records"
+                ],
+                answer: 2,
+                explanation: "High load factor means more collisions, which increases the time spent resolving them."
+            },
+            {
+                q: "A student uses Index = Key MOD 5 for a hash table that stores thousands of records. What is the most likely problem?",
+                options: [
+                    "The table will always stay empty",
+                    "The hash function is not deterministic",
+                    "The table will have too few slots, causing many collisions",
+                    "The keys will no longer be unique"
+                ],
+                answer: 2,
+                explanation: "A modulus of 5 means only 5 slots. Thousands of records into 5 slots gives extreme collision rates."
+            },
+            {
+                q: "In a hash table used as a symbol table, what is the role of the hash function?",
+                options: [
+                    "To encrypt the symbols for security",
+                    "To translate the key into an index for the underlying array",
+                    "To compress the array into a single value",
+                    "To ensure the table stays sorted"
+                ],
+                answer: 1,
+                explanation: "The hash function maps a key (e.g. identifier) to an array index where its record is stored."
+            },
+            {
+                q: "Which change is most likely to improve performance when a hash table suffers from many collisions?",
+                options: [
+                    "Decrease the table size",
+                    "Use a worse hash function",
+                    "Increase table size and rehash the items",
+                    "Remove the hash function entirely"
+                ],
+                answer: 2,
+                explanation: "More slots and rehashing spread keys out, reducing collisions."
             }
         ];
 
@@ -582,12 +739,35 @@
         let quizLocked = false;
         let soundEnabled = true;
 
+        // per-card attempt tracking + level stats
+        let currentCardAttempts = 0;
+        let arcadeCardStartTime = null;
+
+        const levelStats = levels.map(() => ({
+            slotCorrect: 0,
+            slotIncorrect: 0,
+            quizCorrect: 0,
+            quizIncorrect: 0,
+            firstTryCorrect: 0,
+            itemsSeen: 0,
+            arcadeTotalTimeMs: 0,
+            arcadeItems: 0
+        }));
+
+        // session event log
+        const sessionEvents = [];
+
         // Arcade-specific state
         let arcadeActive = false;
         let arcadeTimeRemaining = 0;
         let arcadeTimeLimit = 0;
         let arcadeTimerInterval = null;
         let arcadeCurrentCard = null;
+
+        // Quiz timer state (boss level) – 30s per question
+        let quizTimeLimitMs = 30000; // 30s per question
+        let quizTimeRemaining = 0;
+        let quizTimerInterval = null;
 
         const gridEl = document.getElementById('memory-grid');
         const cardArea = document.getElementById('current-card-area');
@@ -601,19 +781,138 @@
         const arcadeTimeDisplay = document.getElementById('arcade-time-display');
         const arcadeTimerFill = document.getElementById('arcade-timer-fill');
 
-        // --- SOUND HANDLING ---
+        const levelExplanationTitle = document.getElementById('level-explanation-title');
+        const levelExplanationBody = document.getElementById('level-explanation-body');
+        const sessionSummaryEl = document.getElementById('session-summary');
+        const sessionLogContainer = document.getElementById('session-log-container');
+        const sessionLogText = document.getElementById('session-log-text');
+        const copyLogBtn = document.getElementById('copy-log-btn');
+
+        const quizTimerEl = document.getElementById('quiz-timer');
+        const quizTimeDisplay = document.getElementById('quiz-time-display');
+
+        // --- WEB AUDIO SYNTH ENGINE ---
+
+        let audioCtx = null;
+        let audioReady = false;
+
+        function initAudioContext() {
+            if (audioReady) return;
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) {
+                console.warn('Web Audio API not supported, sound disabled.');
+                soundEnabled = false;
+                return;
+            }
+            audioCtx = new AC();
+            audioReady = true;
+            console.log('[audio] AudioContext initialised');
+        }
+
+        function makeGain(duration = 0.3, startGain = 0.3) {
+            const gain = audioCtx.createGain();
+            const now = audioCtx.currentTime;
+            gain.gain.setValueAtTime(startGain, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            gain.connect(audioCtx.destination);
+            return gain;
+        }
+
+        function playNote(freq, type = 'sine', duration = 0.25, gainLevel = 0.25, delay = 0) {
+            if (!audioReady || !soundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = makeGain(duration, gainLevel);
+            const startTime = audioCtx.currentTime + delay;
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
+            osc.connect(gain);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        function playCorrectSound() {
+            const C5 = 523.25;
+            const E5 = 659.25;
+            const G5 = 783.99;
+            playNote(C5, 'sine', 0.18, 0.25, 0);
+            playNote(E5, 'sine', 0.18, 0.25, 0.05);
+            playNote(G5, 'sine', 0.18, 0.25, 0.10);
+        }
+
+        function playWrongSound() {
+            if (!audioReady || !soundEnabled) return;
+            const base = 110;
+            const osc = audioCtx.createOscillator();
+            const gain = makeGain(0.35, 0.35);
+            const now = audioCtx.currentTime;
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(base, now);
+            osc.frequency.setValueAtTime(base * 0.8, now + 0.2);
+            osc.connect(gain);
+            osc.start(now);
+            osc.stop(now + 0.35);
+        }
+
+        function playLevelupSound() {
+            const A4 = 440;
+            const Csharp5 = 554.37;
+            const E5 = 659.25;
+            const A5 = 880;
+            playNote(A4,      'triangle', 0.18, 0.25, 0);
+            playNote(Csharp5, 'triangle', 0.18, 0.25, 0.07);
+            playNote(E5,      'triangle', 0.18, 0.25, 0.14);
+            playNote(A5,      'triangle', 0.22, 0.25, 0.22);
+        }
+
+        function playClickSound() {
+            const freq = 1200;
+            playNote(freq, 'square', 0.08, 0.18, 0);
+        }
 
         function playSound(name) {
-            if (!soundEnabled) return;
-            const audio = document.getElementById('sound-' + name);
-            if (!audio) return;
-            try {
-                audio.currentTime = 0;
-                audio.play().catch(() => {});
-            } catch (_) {}
+            if (!soundEnabled || !audioReady) return;
+            switch (name) {
+                case 'correct':
+                    playCorrectSound();
+                    break;
+                case 'wrong':
+                    playWrongSound();
+                    break;
+                case 'levelup':
+                    playLevelupSound();
+                    break;
+                case 'click':
+                    playClickSound();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // --- UTILS ---
+
+        let quizStarted = false;
+
+        // simple shuffle for randomised exam-mode
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
         }
 
         // --- CORE FUNCTIONS ---
+
+        function updateLevelExplanation() {
+            const lvl = levels[currentLevel];
+            if (!lvl) return;
+            if (levelExplanationTitle) {
+                levelExplanationTitle.textContent = `Level ${currentLevel + 1} – ${lvl.name}`;
+            }
+            if (levelExplanationBody) {
+                levelExplanationBody.innerHTML = `<strong>Algorithm:</strong> ${lvl.algorithm}<br>${lvl.theory}`;
+            }
+        }
 
         function initGrid() {
             gridEl.innerHTML = '';
@@ -650,11 +949,66 @@
                 gridEl.appendChild(slot);
             }
 
-            if (levels[currentLevel].mode === 'search') {
+            // Random chaining setup for Level 3
+            if (levels[currentLevel].mode === 'chaining') {
+                setupRandomChainingLevel();
+            }
+
+            // preload for search and dictionary
+            if (levels[currentLevel].mode === 'search' || levels[currentLevel].mode === 'dictionary') {
                 levels[currentLevel].preLoadedData.forEach(data => {
                     updateMemoryVisuals(data.index, data, { isPreloading: true });
                 });
             }
+        }
+
+        // --- LEVEL 3: RANDOM CHAINING SETUP ---
+
+        function setupRandomChainingLevel() {
+            const lvl = levels[currentLevel];
+            if (!lvl || lvl.mode !== 'chaining') return;
+
+            const size = lvl.tableSize; // 13
+            const chainIndices = [];
+
+            // Pick 2 distinct random indices in [0, size-1]
+            while (chainIndices.length < 2) {
+                const candidate = Math.floor(Math.random() * size);
+                if (!chainIndices.includes(candidate)) {
+                    chainIndices.push(candidate);
+                }
+            }
+
+            const cards = [];
+
+            chainIndices.forEach(idx => {
+                // Preload a small chain at this index (length 1–3)
+                const initialLen = 1 + Math.floor(Math.random() * 3); // 1, 2 or 3
+                for (let k = 0; k < initialLen; k++) {
+                    const key = idx + size * k; // key = idx + 13*k
+                    const rec = {
+                        key,
+                        value: `Preload idx ${idx}, k=${k}`
+                    };
+                    updateMemoryVisuals(idx, rec, { isPreloading: true });
+                }
+
+                // Generate cards that will extend this chain further
+                const extraCards = 2 + Math.floor(Math.random() * 2); // 2 or 3 inserts per chain
+                let nextK = initialLen;
+                for (let step = 0; step < extraCards; step++) {
+                    const k = nextK++;
+                    const key = idx + size * k;
+                    cards.push({
+                        key,
+                        value: `Data @ idx ${idx}, k=${k}`
+                    });
+                }
+            });
+
+            // Shuffle so the two chains are interleaved randomly
+            shuffleArray(cards);
+            lvl.cards = cards;
         }
 
         function updateArcadeTimerUI() {
@@ -709,13 +1063,17 @@
         }
 
         function generateArcadeCard() {
-            // Generate a random key in a nice range (retro invader ID)
             const key = Math.floor(Math.random() * 90) + 10; // 10–99
             arcadeCurrentCard = {
                 key,
                 value: "👾 Invader #" + key
             };
-            showCard(); // will render using arcadeCurrentCard
+            // track arcade items and reaction start
+            levelStats[currentLevel].itemsSeen++;
+            levelStats[currentLevel].arcadeItems++;
+            arcadeCardStartTime = performance.now();
+            currentCardAttempts = 0;
+            showCard();
         }
 
         function showCard() {
@@ -732,6 +1090,9 @@
                 cardData = arcadeCurrentCard;
             } else {
                 cardData = levelData.cards[currentCardIndex];
+                // track items seen and reset attempts for “first-try” stats
+                levelStats[currentLevel].itemsSeen++;
+                currentCardAttempts = 0;
             }
 
             const mod = levelData.tableSize;
@@ -748,7 +1109,7 @@
                     </div>
                 `;
             } else {
-                const showHash = (levelData.mode === 'search' || levelData.mode === 'arcade') ? baseHash : "?";
+                const showHash = (levelData.mode === 'search' || levelData.mode === 'dictionary' || levelData.mode === 'arcade') ? baseHash : "?";
                 workingHtml = `
                     <div class="data-card-working">
                         HASH: ${cardData.key} % ${mod} = ${showHash}
@@ -756,15 +1117,23 @@
                 `;
             }
 
-            if (levelData.mode === 'search') {
+            if (levelData.mode === 'search' || levelData.mode === 'dictionary') {
+                const isDict = levelData.mode === 'dictionary';
+                const mainLabel = isDict
+                    ? `WORD: ${cardData.word}`
+                    : `KEY: ${cardData.key}`;
+                const subtitle = isDict
+                    ? "Use the hash table as a dictionary: jump to the index and find the word’s definition."
+                    : "Use the hash to jump to the starting index and locate the record.";
+
                 cardArea.innerHTML = `
                     <div class="data-card" style="background: var(--highlight); color: #111;">
                         <div class="data-card-main">
-                            <span style="font-size:0.8em;">FIND THIS KEY:</span><br>
-                            KEY: ${cardData.key}
+                            <span style="font-size:0.8em;">FIND THIS ${isDict ? "WORD" : "KEY"}:</span><br>
+                            ${mainLabel}
                         </div>
                         <div class="data-card-sub">
-                            Use the hash to jump to the starting index and locate the record.
+                            ${subtitle}
                         </div>
                         ${workingHtml}
                     </div>
@@ -777,6 +1146,20 @@
                         </div>
                         <div class="data-card-sub">
                             Place the invader using Key MOD ${mod} with linear probing before time runs out!
+                        </div>
+                        ${workingHtml}
+                    </div>
+                `;
+            } else if (levelData.mode === 'chaining') {
+                const chainIndex = baseHash;
+                const currentLen = memory[chainIndex] ? memory[chainIndex].length : 0;
+
+                cardArea.innerHTML = `
+                    <div class="data-card">
+                        <div class="data-card-main">KEY: ${cardData.key}</div>
+                        <div class="data-card-sub">
+                            Target chain index: ${chainIndex}<br>
+                            Current chain length: ${currentLen}
                         </div>
                         ${workingHtml}
                     </div>
@@ -815,6 +1198,8 @@
             const levelData = levels[currentLevel];
             if (levelData.mode === 'quiz') return;
 
+            const stats = levelStats[currentLevel];
+
             const currentCard = (levelData.mode === 'arcade')
                 ? arcadeCurrentCard
                 : levelData.cards[currentCardIndex];
@@ -822,21 +1207,38 @@
             const mod = levelData.tableSize;
             const rawHash = currentCard.key % mod;
 
+            // attempt count for this card
+            currentCardAttempts++;
+
             let correctIndex = -1;
             let success = false;
             let msg = "Incorrect.";
 
-            if (levelData.mode === 'search') {
+            if (levelData.mode === 'search' || levelData.mode === 'dictionary') {
+                const isDict = levelData.mode === 'dictionary';
                 correctIndex = currentCard.index;
+
                 if (clickedIndex === correctIndex) {
                     success = true;
-                    msg = `SUCCESS! Key ${currentCard.key} found at Index ${correctIndex}. Lookup: O(1) on average.`;
+                    if (isDict) {
+                        msg = `SUCCESS! Word "${currentCard.word}" found at index ${correctIndex}. This is exactly how a dictionary lookup works.`;
+                    } else {
+                        msg = `SUCCESS! Key ${currentCard.key} found at Index ${correctIndex}. Lookup: O(1) on average.`;
+                    }
                     score += 15;
                     playSound('correct');
+                    stats.slotCorrect++;
+                    if (currentCardAttempts === 1) stats.firstTryCorrect++;
                 } else {
-                    msg = `Key not found at Index ${clickedIndex}. Start from hash ${rawHash} and follow the table.`;
+                    if (isDict) {
+                        msg = `Not quite. "${currentCard.word}" is not stored at index ${clickedIndex}. ` +
+                              `Conceptually, hash(word) gives a starting index (here ${rawHash}), then you follow the table from there.`;
+                    } else {
+                        msg = `Key not found at Index ${clickedIndex}. Start from hash ${rawHash} and follow the table.`;
+                    }
                     score = Math.max(0, score - 5);
                     playSound('wrong');
+                    stats.slotIncorrect++;
                 }
             } else {
                 if (levelData.mode === 'basic') {
@@ -865,11 +1267,29 @@
                 if (clickedIndex === correctIndex) {
                     success = true;
                     score += (levelData.mode === 'arcade') ? 15 : 10;
-                    msg = levelData.mode === 'arcade'
-                        ? "Nice shot! Invader stored."
-                        : "Correct allocation!";
-                    updateMemoryVisuals(clickedIndex, currentCard);
+
+                    if (levelData.mode === 'chaining') {
+                        const oldLen = memory[correctIndex] ? memory[correctIndex].length : 0;
+                        updateMemoryVisuals(clickedIndex, currentCard);
+                        const newLen = oldLen + 1;
+                        msg = `Correct! Chain at index ${correctIndex}: length ${oldLen} \u2192 ${newLen}.`;
+                    } else {
+                        updateMemoryVisuals(clickedIndex, currentCard);
+                        msg = levelData.mode === 'arcade'
+                            ? "Nice shot! Invader stored."
+                            : "Correct allocation!";
+                    }
+
                     playSound('correct');
+                    stats.slotCorrect++;
+                    if (currentCardAttempts === 1) stats.firstTryCorrect++;
+
+                    // record arcade reaction time
+                    if (levelData.mode === 'arcade' && arcadeCardStartTime != null) {
+                        const dt = performance.now() - arcadeCardStartTime;
+                        stats.arcadeTotalTimeMs += dt;
+                        arcadeCardStartTime = null;
+                    }
                 } else {
                     score = Math.max(0, score - 5);
                     if (levelData.mode === 'basic') {
@@ -880,8 +1300,24 @@
                         msg = `Wrong! In chaining, always store at the hashed index (${rawHash}) and add to the list.`;
                     }
                     playSound('wrong');
+                    stats.slotIncorrect++;
                 }
             }
+
+            // log event
+            sessionEvents.push({
+                timestamp: Date.now(),
+                level: currentLevel + 1,
+                mode: levelData.mode,
+                event: 'slotClick',
+                key: currentCard.key,
+                word: currentCard.word || null,
+                clickedIndex,
+                correctIndex,
+                correct: success,
+                attemptNumber: currentCardAttempts,
+                scoreAfter: score
+            });
 
             pulseSlot(clickedIndex, success);
             displayFeedback(msg, success);
@@ -925,7 +1361,7 @@
                 return;
             }
 
-            if (levelData.mode === 'search' && isPreloading) {
+            if ((levelData.mode === 'search' || levelData.mode === 'dictionary') && isPreloading) {
                 memory[index] = card;
                 renderStoredKey(slotEl, card, { faded: true });
                 return;
@@ -949,30 +1385,57 @@
             document.getElementById('score').innerText = score;
         }
 
-        // --- QUIZ LOGIC ---
+        // --- QUIZ LOGIC (BOSS LEVEL, 30s PER QUESTION, SUDDEN DEATH) ---
 
-        let quizStarted = false;
+        function updateQuizTimerUI() {
+            const seconds = Math.max(0, Math.ceil(quizTimeRemaining / 1000));
+            quizTimeDisplay.textContent = seconds;
+        }
+
+        function startQuizTimer() {
+            quizTimeLimitMs = 30000; // 30 seconds per question
+            quizTimeRemaining = quizTimeLimitMs;
+            quizTimerEl.classList.remove('hidden');
+            updateQuizTimerUI();
+
+            if (quizTimerInterval) {
+                clearInterval(quizTimerInterval);
+            }
+
+            quizTimerInterval = setInterval(() => {
+                quizTimeRemaining -= 1000;
+                if (quizTimeRemaining <= 0) {
+                    quizTimeRemaining = 0;
+                    updateQuizTimerUI();
+                    stopQuizTimer();
+                    handleQuizTimeout(); // sudden death
+                } else {
+                    updateQuizTimerUI();
+                }
+            }, 1000);
+        }
+
+        function stopQuizTimer() {
+            if (quizTimerInterval) {
+                clearInterval(quizTimerInterval);
+                quizTimerInterval = null;
+            }
+            quizTimerEl.classList.add('hidden');
+        }
 
         function startQuiz() {
             currentQuizIndex = 0;
             quizLocked = false;
             quizStarted = true;
-            renderQuestion();
+            shuffleArray(examQuestions);
+            renderQuestion(); // renderQuestion will start the per-question timer
             playSound('levelup');
         }
 
         function renderQuestion() {
             if (currentQuizIndex >= examQuestions.length) {
-                document.getElementById('modal-title').innerText = "Assessment Complete";
-                document.getElementById('modal-desc').innerText = `Final Score: ${score}`;
-                document.getElementById('modal-theory').innerHTML =
-                    "You have practised hash table insertion, collision handling, retrieval and dictionary-style usage. Review any explanations you found tricky, then conquer the real paper.";
-                quizArea.classList.add('hidden');
-                quizArea.innerHTML = "";
-                actionBtn.classList.remove('hidden');
-                actionBtn.innerText = "Reset System";
-                actionBtn.dataset.action = "reset";
-                return;
+                shuffleArray(examQuestions);
+                currentQuizIndex = 0;
             }
 
             const q = examQuestions[currentQuizIndex];
@@ -991,32 +1454,58 @@
             quizArea.innerHTML = html;
             quizArea.classList.remove('hidden');
             quizLocked = false;
+
+            // Start / restart the per-question timer
+            startQuizTimer();
         }
 
         function handleQuizAnswer(selectedIdx) {
             if (quizLocked) return;
             quizLocked = true;
 
+            // Stop timer – they’ve committed to an answer
+            stopQuizTimer();
+
             const q = examQuestions[currentQuizIndex];
             const opts = quizArea.querySelectorAll('.quiz-option');
+            const stats = levelStats[currentLevel];
 
             opts.forEach(o => {
                 o.disabled = true;
             });
 
-            if (selectedIdx === q.answer) {
+            const correctIdx = q.answer;
+            let success = false;
+
+            if (selectedIdx === correctIdx) {
+                success = true;
                 opts[selectedIdx].classList.add('correct');
                 score += 20;
+                stats.quizCorrect++;
                 displayFeedback("Correct!", true);
                 playSound('correct');
             } else {
                 opts[selectedIdx].classList.add('wrong');
-                opts[q.answer].classList.add('correct');
+                opts[correctIdx].classList.add('correct');
                 score = Math.max(0, score - 10);
+                stats.quizIncorrect++;
                 displayFeedback("Incorrect.", false);
                 playSound('wrong');
             }
             updateScore();
+
+            // log quiz event
+            sessionEvents.push({
+                timestamp: Date.now(),
+                level: currentLevel + 1,
+                mode: 'quiz',
+                event: 'quizAnswer',
+                questionIndex: currentQuizIndex,
+                selectedIndex: selectedIdx,
+                correctIndex: correctIdx,
+                correct: success,
+                scoreAfter: score
+            });
 
             const expEl = document.getElementById('quiz-explanation');
             if (expEl) {
@@ -1035,18 +1524,70 @@
             renderQuestion();
         }
 
+        function handleQuizTimeout() {
+            if (quizLocked) return;
+            quizLocked = true;
+
+            const q = examQuestions[currentQuizIndex];
+            const stats = levelStats[currentLevel];
+            stats.quizIncorrect++;
+
+            score = Math.max(0, score - 10);
+            updateScore();
+
+            const opts = quizArea.querySelectorAll('.quiz-option');
+            opts.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.answer) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            const expEl = document.getElementById('quiz-explanation');
+            if (expEl) {
+                expEl.textContent = "Time's up! " + q.explanation;
+                expEl.classList.remove('hidden');
+            }
+
+            displayFeedback("Time's up! That question counts as incorrect. Session over.", false);
+            playSound('wrong');
+
+            sessionEvents.push({
+                timestamp: Date.now(),
+                level: currentLevel + 1,
+                mode: 'quiz',
+                event: 'quizTimeout',
+                questionIndex: currentQuizIndex,
+                correctIndex: q.answer,
+                correct: false,
+                scoreAfter: score
+            });
+
+            // Sudden-death: show full session summary now
+            showFinalSummary();
+        }
+
         // --- FLOW CONTROL ---
 
         function startGame() {
             try {
-                // Any time we start a level, make sure arcade timers are off
                 stopArcadeMode();
+                stopQuizTimer();
                 modal.classList.add('hidden');
 
                 document.getElementById('level-display').innerText = currentLevel + 1;
                 document.getElementById('mode-name').innerText = levels[currentLevel].name;
+                updateLevelExplanation();
 
                 const levelData = levels[currentLevel];
+
+                // log level start
+                sessionEvents.push({
+                    timestamp: Date.now(),
+                    level: currentLevel + 1,
+                    mode: levelData.mode,
+                    event: 'levelStart'
+                });
 
                 if (levelData.mode === 'quiz') {
                     gridEl.innerHTML =
@@ -1056,9 +1597,10 @@
 
                     modal.classList.remove('hidden');
                     document.getElementById('modal-title').innerText = "BOSS LEVEL";
-                    document.getElementById('modal-desc').innerText = "Multiple-choice exam-style questions";
+                    document.getElementById('modal-desc').innerText = "30-second sudden-death exam drill";
                     document.getElementById('modal-theory').innerHTML =
-                        "Answer correctly for bonus points. Wrong answers lose points. Read the explanations – they mirror how mark schemes award marks.";
+                        "You get 30 seconds per question. Correct answers gain points, wrong answers lose points. " +
+                        "If the timer hits zero on any question, that question is marked wrong and the session summary appears immediately.";
 
                     quizArea.classList.remove('hidden');
                     actionBtn.classList.add('hidden');
@@ -1069,6 +1611,7 @@
                     playSound('levelup');
                 } else {
                     initGrid();
+                    currentCardIndex = 0;
                     showCard();
                     playSound('levelup');
                 }
@@ -1078,7 +1621,69 @@
             }
         }
 
+        function buildLevelSummaryText() {
+            const lines = [];
+            levels.forEach((lvl, idx) => {
+                const stats = levelStats[idx];
+                const totalAttempts = stats.slotCorrect + stats.slotIncorrect;
+                const ft = stats.firstTryCorrect;
+                const ftText = totalAttempts > 0
+                    ? `${ft}/${stats.itemsSeen || totalAttempts} first-try correct`
+                    : "No slot questions attempted";
+
+                let arcadeText = "";
+                if (stats.arcadeItems > 0 && stats.arcadeTotalTimeMs > 0) {
+                    const avgMs = stats.arcadeTotalTimeMs / stats.arcadeItems;
+                    const avgSecs = (avgMs / 1000).toFixed(2);
+                    arcadeText = ` | Arcade avg time/card: ${avgSecs}s`;
+                }
+
+                const quizTotal = stats.quizCorrect + stats.quizIncorrect;
+                const quizText = quizTotal > 0
+                    ? ` | Quiz: ${stats.quizCorrect}/${quizTotal} correct`
+                    : "";
+
+                lines.push(
+                    `<li><strong>Level ${idx + 1}: ${lvl.name}</strong><br>` +
+                    `Slot tasks: ${stats.slotCorrect}/${totalAttempts} correct (${ftText})${arcadeText}${quizText}</li>`
+                );
+            });
+            return `<ul>${lines.join('')}</ul>`;
+        }
+
+        function showFinalSummary() {
+            stopArcadeMode();
+            stopQuizTimer();
+
+            document.getElementById('modal-title').innerText = "Session Summary";
+            document.getElementById('modal-desc').innerText = `Total score: ${score}`;
+
+            const summaryHtml = `
+                <p>Use this to drive revision: look for levels with lower first-try accuracy or slower arcade reactions.</p>
+                ${buildLevelSummaryText()}
+            `;
+            sessionSummaryEl.innerHTML = summaryHtml;
+            sessionSummaryEl.classList.remove('hidden');
+
+            // JSON export
+            const logString = JSON.stringify(sessionEvents, null, 2);
+            sessionLogText.value = logString;
+            sessionLogContainer.classList.remove('hidden');
+
+            document.getElementById('modal-theory').innerHTML =
+                "<strong>Teaching tip:</strong> Use the stats and JSON log to discuss collisions, probing, and lookup behaviour with the class.";
+
+            actionBtn.classList.remove('hidden');
+            actionBtn.innerText = "Restart session";
+            actionBtn.dataset.action = "reset";
+
+            modal.classList.remove('hidden');
+        }
+
         function endLevel() {
+            stopArcadeMode();
+            stopQuizTimer();
+
             currentLevel++;
             if (currentLevel < levels.length) {
                 document.getElementById('modal-title').innerText = `Level ${currentLevel} Complete`;
@@ -1091,13 +1696,15 @@
                 actionBtn.classList.remove('hidden');
                 actionBtn.dataset.action = "start";
                 quizArea.classList.add('hidden');
+                sessionSummaryEl.classList.add('hidden');
+                sessionLogContainer.classList.add('hidden');
 
                 modal.classList.remove('hidden');
                 actionBtn.focus();
                 playSound('levelup');
             } else {
-                // Shouldn't normally get here because quiz is final and doesn't call endLevel in same way
-                startGame();
+                // final end-of-session summary
+                showFinalSummary();
             }
         }
 
@@ -1105,8 +1712,13 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             actionBtn.addEventListener('click', () => {
+                // Initialise Web Audio on first click
+                initAudioContext();
+
                 const mode = actionBtn.dataset.action;
-                playSound('click');
+                if (audioReady && soundEnabled) {
+                    playClickSound();
+                }
                 if (mode === "start") {
                     startGame();
                 } else if (mode === "reset") {
@@ -1117,14 +1729,17 @@
             if (workingToggle) {
                 workingToggle.addEventListener('change', (e) => {
                     showWorking = e.target.checked;
-                    showCard();
+                    const lvl = levels[currentLevel];
+                    if (lvl.mode !== 'quiz') {
+                        showCard();
+                    }
                 });
             }
 
             if (soundToggle) {
                 soundToggle.addEventListener('change', (e) => {
                     soundEnabled = e.target.checked;
-                    if (soundEnabled) playSound('click');
+                    if (soundEnabled && audioReady) playClickSound();
                 });
             }
 
@@ -1140,10 +1755,30 @@
 
                 const nextBtn = e.target.closest('#quiz-next-btn');
                 if (nextBtn && !nextBtn.disabled) {
-                    playSound('click');
+                    if (audioReady && soundEnabled) playClickSound();
                     goToNextQuestion();
                 }
             });
+
+            // copy session log button
+            if (copyLogBtn) {
+                copyLogBtn.addEventListener('click', () => {
+                    try {
+                        sessionLogText.select();
+                        document.execCommand('copy');
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(sessionLogText.value);
+                        }
+                        displayFeedback("Session log copied to clipboard.", true);
+                    } catch (err) {
+                        displayFeedback("Could not copy log, but you can manually select the JSON.", false);
+                        console.error(err);
+                    }
+                });
+            }
+
+            // Initial explanation for level 1
+            updateLevelExplanation();
         });
     </script>
 </body>
