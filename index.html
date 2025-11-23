@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Hash-Crash Scheduler: Final Edition</title>
+    <title>The Hash-Crash Scheduler: Final Exam Edition</title>
     <style>
         :root {
             --bg-color: #1e1e2e;
@@ -50,6 +50,52 @@
             justify-content: space-between;
             align-items: center;
             font-size: 0.9rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        #info-panel .info-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        #info-panel label {
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        /* Arcade timer */
+        #arcade-timer {
+            background: #181825;
+            border-radius: 6px;
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+
+        #arcade-timer-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #arcade-timer-bar {
+            width: 100%;
+            height: 8px;
+            background: #313244;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        #arcade-timer-fill {
+            width: 100%;
+            height: 100%;
+            background: var(--accent);
+            transform-origin: left center;
+            transition: width 0.3s linear;
         }
 
         /* Current Data Card */
@@ -57,7 +103,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 120px;
+            min-height: 120px;
             background: #181825;
             border-radius: 8px;
             border: 2px dashed var(--text);
@@ -70,11 +116,29 @@
             padding: 15px 30px;
             border-radius: 5px;
             font-weight: bold;
-            font-size: 1.2em;
+            font-size: 1.1em;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             animation: popIn 0.3s ease;
             text-align: center;
-            min-width: 200px;
+            min-width: 220px;
+        }
+
+        .data-card-main {
+            margin-bottom: 4px;
+        }
+
+        .data-card-sub {
+            font-size: 0.75em;
+            font-weight: normal;
+            opacity: 0.85;
+        }
+
+        .data-card-working {
+            font-size: 0.7em;
+            background: rgba(0,0,0,0.35);
+            margin-top: 6px;
+            padding: 3px;
+            border-radius: 3px;
         }
 
         @keyframes popIn {
@@ -101,15 +165,17 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            outline: none;
         }
 
-        .memory-slot:hover {
+        .memory-slot:hover,
+        .memory-slot:focus-visible {
             border-color: var(--accent);
             background: #585b70;
             transform: translateY(-2px);
         }
-        
-        /* New Pulse Feedback */
+
+        /* Pulse Feedback */
         .slot-pulse-correct {
             animation: pulse-correct 0.4s ease-out;
         }
@@ -130,6 +196,15 @@
             100% { box-shadow: 0 0 0 0 rgba(243, 139, 168, 0); }
         }
 
+        /* Probe path highlight */
+        .slot-probe-path {
+            animation: probe-glow 0.6s ease-out;
+        }
+
+        @keyframes probe-glow {
+            0% { box-shadow: 0 0 0 0 rgba(137, 180, 250, 0.7); }
+            100% { box-shadow: 0 0 0 0 rgba(137, 180, 250, 0); }
+        }
 
         .slot-index {
             font-size: 0.8em;
@@ -161,9 +236,10 @@
         /* Feedback Area */
         #feedback {
             text-align: center;
-            height: 30px;
+            min-height: 30px;
             font-weight: bold;
             margin-bottom: 10px;
+            font-size: 0.95rem;
         }
 
         /* Modal */
@@ -182,11 +258,13 @@
             background: var(--card-bg);
             padding: 30px;
             border-radius: 10px;
-            max-width: 600px;
+            max-width: 650px;
             width: 90%;
             text-align: center;
             border: 2px solid var(--accent);
             box-shadow: 0 0 30px rgba(137, 180, 250, 0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .start-btn {
@@ -194,16 +272,17 @@
             color: #1e1e2e;
             border: none;
             padding: 12px 30px;
-            font-size: 1.1em;
+            font-size: 1.05em;
             border-radius: 5px;
             cursor: pointer;
             margin-top: 20px;
             font-weight: 900;
-            transition: transform 0.1s;
+            transition: transform 0.1s, box-shadow 0.1s;
         }
 
         .start-btn:hover {
             transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(137,180,250,0.6);
         }
 
         .hidden { display: none !important; }
@@ -212,11 +291,11 @@
         .quiz-container {
             text-align: left;
             margin-top: 20px;
-            max-height: 300px;
+            max-height: 320px;
             overflow-y: auto;
         }
         .quiz-question {
-            font-size: 1.1em;
+            font-size: 1.05em;
             margin-bottom: 15px;
             color: var(--highlight);
             border-bottom: 1px solid #444;
@@ -226,17 +305,22 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            margin-bottom: 15px;
         }
         .quiz-option {
             background: var(--slot-bg);
-            padding: 12px;
+            padding: 10px 12px;
             border-radius: 5px;
             cursor: pointer;
             border: 1px solid #585b70;
-            transition: background 0.2s;
+            transition: background 0.2s, transform 0.05s;
+            font-family: inherit;
+            font-size: 0.95em;
+            text-align: left;
         }
-        .quiz-option:hover {
+        .quiz-option:hover:enabled {
             background: #585b70;
+            transform: translateY(-1px);
         }
         .quiz-option.correct {
             background: var(--success);
@@ -248,31 +332,80 @@
             color: #111;
             border-color: var(--error);
         }
+        .quiz-explanation {
+            font-size: 0.85em;
+            background: #181825;
+            padding: 10px;
+            border-radius: 5px;
+            border-left: 3px solid var(--highlight);
+        }
+        .quiz-next-btn {
+            font-size: 0.9em;
+            padding: 8px 16px;
+            margin-top: 10px;
+        }
+        .quiz-next-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+            box-shadow: none;
+            transform: none;
+        }
 
+        @media (max-width: 600px) {
+            .data-card {
+                padding: 12px 16px;
+                font-size: 1em;
+            }
+            #info-panel {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>The Hash-Crash Scheduler</h1>
-        <div class="subtitle">AQA A-Level Computer Science: Enhanced Edition</div>
+        <div class="subtitle">AQA A-Level Computer Science: Enhanced Exam Edition</div>
     </header>
 
     <div id="game-container">
         <div id="info-panel">
-            <div>Level: <span id="level-display">1</span></div>
-            <div>Mode: <span id="mode-name" style="color: var(--highlight);">Basic Hashing</span></div>
-            <div>Score: <span id="score">0</span></div>
+            <div class="info-item">Level: <span id="level-display">1</span></div>
+            <div class="info-item">Mode: <span id="mode-name" style="color: var(--highlight);">Basic Hashing</span></div>
+            <div class="info-item">Score: <span id="score">0</span></div>
+            <div class="info-item">
+                <label>
+                    <input type="checkbox" id="toggle-working">
+                    Show working
+                </label>
+            </div>
+            <div class="info-item">
+                <label>
+                    <input type="checkbox" id="toggle-sound" checked>
+                    Sound
+                </label>
+            </div>
+            <div id="arcade-timer" class="hidden">
+                <div id="arcade-timer-label">
+                    <span>👾 Arcade Time</span>
+                    <span><span id="arcade-time-display">0</span>s left</span>
+                </div>
+                <div id="arcade-timer-bar">
+                    <div id="arcade-timer-fill"></div>
+                </div>
+            </div>
         </div>
 
         <div id="current-card-area"></div>
 
         <div id="feedback"></div>
 
-        <div id="memory-grid"></div>
+        <div id="memory-grid" role="grid" aria-label="Hash table memory slots"></div>
     </div>
 
-    <div id="modal">
+    <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-desc">
         <div class="modal-content">
             <h2 id="modal-title">Welcome, Controller</h2>
             <p id="modal-desc">You are responsible for storing data records efficiently.</p>
@@ -283,115 +416,158 @@
             
             <div id="quiz-area" class="hidden quiz-container"></div>
 
-            <button id="action-btn" class="start-btn">START LEVEL 1</button>
+            <button id="action-btn" class="start-btn" data-action="start">START LEVEL 1</button>
         </div>
     </div>
 
+    <!-- SOUND EFFECTS -->
+    <!-- Replace src paths with your actual files -->
+    <audio id="sound-correct" src="correct.mp3" preload="auto"></audio>
+    <audio id="sound-wrong" src="wrong.mp3" preload="auto"></audio>
+    <audio id="sound-levelup" src="levelup.mp3" preload="auto"></audio>
+    <audio id="sound-click" src="click.mp3" preload="auto"></audio>
+
     <script>
         // --- GAME CONFIGURATION & DATA ---
-        
-        // Level Definitions
+
         const levels = [
             {
                 name: "The Perfect Hash",
                 algorithm: "Index = Key MOD 11",
-                theory: "A hashing algorithm calculates an index from the key. Ideally, every key maps to a unique slot.",
-                mode: "basic", 
+                theory: "A hashing algorithm calculates an index from the key. Ideally, every key maps to a unique slot (no collisions).",
+                mode: "basic",
                 tableSize: 11,
                 cards: [
-                    { key: 22, value: "User A" }, // 0
-                    { key: 45, value: "User B" }, // 1
-                    { key: 14, value: "User C" }, // 3
-                    { key: 53, value: "User D" }, // 9
-                    { key: 10, value: "User E" }  // 10
+                    { key: 22, value: "User A" },
+                    { key: 45, value: "User B" },
+                    { key: 14, value: "User C" },
+                    { key: 53, value: "User D" },
+                    { key: 10, value: "User E" }
                 ]
             },
             {
                 name: "Collision (Rehashing)",
                 algorithm: "Index = Key MOD 11 (Linear Probing)",
-                theory: "When a collision occurs (slot occupied), Rehashing looks for the next empty slot (Linear Probing).",
-                mode: "probing", 
+                theory: "When a collision occurs (slot occupied), linear probing checks the next slot, then the next, until an empty one is found.",
+                mode: "probing",
                 tableSize: 11,
                 cards: [
-                    { key: 33, value: "Rec 1" }, // 33%11 = 0
-                    { key: 11, value: "Rec 2" }, // 11%11 = 0 -> Collision -> 1
-                    { key: 56, value: "Rec 3" }, // 56%11 = 1 -> Collision -> 2
-                    { key: 23, value: "Rec 4" }, // 23%11 = 1 -> Collision -> 3
+                    { key: 33, value: "Rec 1" },
+                    { key: 11, value: "Rec 2" },
+                    { key: 56, value: "Rec 3" },
+                    { key: 23, value: "Rec 4" }
                 ]
             },
             {
                 name: "The Chain Gang (Chaining)",
-                algorithm: "Index = Key MOD 13 (Add to List)", // *** TABLE SIZE CHANGED TO 13 ***
-                theory: "Chaining uses a linked list at each slot. If a collision occurs, simply add the new item to the list at that index. The table size is now 13.",
-                mode: "chaining", 
+                algorithm: "Index = Key MOD 13 (Chaining)",
+                theory: "Chaining uses a list at each slot. If a collision occurs, add the new item to the list at that index. The table size is now 13.",
+                mode: "chaining",
                 tableSize: 13,
                 cards: [
-                    { key: 25, value: "Data X" }, // 25%13 = 12
-                    { key: 38, value: "Data Y" }, // 38%13 = 12 (List)
-                    { key: 51, value: "Data Z" }  // 51%13 = 12 (List)
+                    { key: 25, value: "Data X" },
+                    { key: 38, value: "Data Y" },
+                    { key: 51, value: "Data Z" }
                 ]
             },
             {
                 name: "Search & Retrieval (O(1))",
                 algorithm: "Index = Key MOD 11",
-                theory: "The core benefit of hashing is quick retrieval. Use the algorithm (Key MOD 11) to find the location of the key. Retrieval is O(1) if successful.",
+                theory: "Hashing lets you jump straight to the data. Use Key MOD 11 to calculate where to start the lookup.",
                 mode: "search",
                 tableSize: 11,
-                // Data pre-loaded into the table before search begins
                 preLoadedData: [
-                    { key: 11, index: 0, value: "Rec A" }, 
-                    { key: 45, index: 1, value: "Rec B" }, 
-                    { key: 22, index: 2, value: "Rec C" }, 
-                    { key: 8, index: 8, value: "Rec D" }, 
+                    { key: 11, index: 0, value: "Rec A" },
+                    { key: 45, index: 1, value: "Rec B" },
+                    { key: 22, index: 2, value: "Rec C" },
+                    { key: 8,  index: 8, value: "Rec D" }
                 ],
-                // Keys the student must search for
                 cards: [
-                    { key: 45, value: "Rec B", index: 1 }, 
-                    { key: 22, value: "Rec C", index: 2 }, 
-                    { key: 8, value: "Rec D", index: 8 } 
+                    { key: 45, value: "Rec B", index: 1 },
+                    { key: 22, value: "Rec C", index: 2 },
+                    { key: 8,  value: "Rec D", index: 8 }
                 ]
+            },
+            {
+                name: "Retro Arcade: Hash Invaders",
+                algorithm: "Index = Key MOD 11 (Linear Probing)",
+                theory: "Timed speed round! Random hash invaders fall in. Use Key MOD 11 with linear probing to place them before the timer hits zero.",
+                mode: "arcade",
+                tableSize: 11,
+                cards: [],           // generated dynamically
+                timeLimitMs: 30000   // 30 seconds
             },
             {
                 name: "BOSS LEVEL: EXAM SIMULATOR",
                 algorithm: "A-Level Theory",
-                theory: "Put down the cards. It's time to test your knowledge against the AQA specification.",
-                mode: "quiz", 
+                theory: "Multiple-choice questions based on AQA-style hash table and dictionary questions.",
+                mode: "quiz",
                 tableSize: 11,
-                cards: [] 
+                cards: []
             }
         ];
 
-        // Exam Questions
         const examQuestions = [
             {
-                q: "A collision occurs when two keys generate the same index. Which method solves this by searching for the next empty slot?",
-                options: ["Chaining", "Rehashing (Linear Probing)", "Dictionary Mapping", "Normalisation"],
+                q: "A hash table uses the algorithm Index = Key MOD 10. At which index should a record with key 37 first be placed?",
+                options: ["Index 3", "Index 7", "Index 10", "Index 5"],
                 answer: 1,
-                explanation: "Rehashing (specifically linear probing) involves looking for the next available slot when a collision occurs."
+                explanation: "37 ÷ 10 = 3 remainder 7, so the hash value / index is 7."
             },
             {
-                q: "Which of the following is NOT a typical application of a Hash Table?",
-                options: ["Database Indexing", "Memory Addressing", "Sorting a list alphabetically", "Encryption"],
-                answer: 2,
-                explanation: "Hash tables are used for quick lookups (databases, caches) and encryption. They are NOT used for sorting data order."
-            },
-            {
-                q: "Calculate the Index for Key 47 if the table size is 11. Algorithm: Key MOD 11.",
-                options: ["Index 1", "Index 4", "Index 3", "Index 7"],
-                answer: 2,
-                explanation: "47 divided by 11 is 4 with a remainder of 3. (4*11 = 44, 47-44 = 3)."
-            },
-            {
-                q: "What is 'Clustering' in the context of Hash Tables?",
-                options: ["When data is encrypted securely", "When a hashing algorithm produces indices that are not randomly distributed", "When a table has no collisions", "When using a Dictionary"],
+                q: "Why is a hash table a suitable data structure for implementing a dictionary of word → definition?",
+                options: [
+                    "Because it always stores items in alphabetical order",
+                    "Because it allows near-instant access to the value using the key",
+                    "Because it can only store numeric values",
+                    "Because it automatically encrypts the data"
+                ],
                 answer: 1,
-                explanation: "Clustering happens when an algorithm fails to spread data uniformly, causing items to bunch up and increasing collisions."
+                explanation: "A dictionary maps keys to values. A hash table uses a hash function to jump directly to the location for a key, giving very fast lookup."
             },
             {
-                q: "Which data structure maps a unique Key to a Value, similar to a real-life dictionary?",
-                options: ["Queue", "Stack", "Associative Array (Dictionary)", "Linked List"],
+                q: "Two different keys produce the same hash value when inserted into a hash table using linear probing. What happens next?",
+                options: [
+                    "The second key is discarded",
+                    "The second key overwrites the first key",
+                    "The algorithm searches sequentially for the next empty slot",
+                    "Both keys are placed in a queue"
+                ],
                 answer: 2,
-                explanation: "A Dictionary (or Associative Array) maps a unique Key to a Value. A hash table is often used to implement this."
+                explanation: "With linear probing, the algorithm checks the next slot (and then the next, etc.) until it finds an empty position for the new item."
+            },
+            {
+                q: "In chaining, how are collisions handled in a hash table?",
+                options: [
+                    "By completely recalculating the hash function",
+                    "By storing additional items in a linked list at the same index",
+                    "By deleting the older record",
+                    "By resizing the table every time a collision happens"
+                ],
+                answer: 1,
+                explanation: "Chaining keeps a list of all the records whose keys hash to the same index, so multiple records can share one slot."
+            },
+            {
+                q: "A hash table uses Index = Key MOD 11. A record with key 45 is stored at index 1. Which of the following best describes how the index 1 was found?",
+                options: [
+                    "By dividing 45 by 11 and using the quotient",
+                    "By adding 11 repeatedly until 45 is reached",
+                    "By finding the remainder when 45 is divided by 11",
+                    "By subtracting 11 repeatedly until 0 is reached"
+                ],
+                answer: 2,
+                explanation: "45 ÷ 11 = 4 remainder 1. The index is the remainder from Key MOD TableSize."
+            },
+            {
+                q: "Assuming a good hashing algorithm, what is the typical time complexity to look up a value in a hash table?",
+                options: [
+                    "O(n²)",
+                    "O(log n)",
+                    "O(n)",
+                    "O(1) on average"
+                ],
+                answer: 3,
+                explanation: "A well-designed hash table gives constant-time average lookups, O(1), because it jumps straight to the slot using the key."
             }
         ];
 
@@ -400,8 +576,18 @@
         let score = 0;
         let currentCardIndex = 0;
         let currentQuizIndex = 0;
-        let memory = []; // Array size determined dynamically by level
+        let memory = [];
         let tableSize = 11;
+        let showWorking = false;
+        let quizLocked = false;
+        let soundEnabled = true;
+
+        // Arcade-specific state
+        let arcadeActive = false;
+        let arcadeTimeRemaining = 0;
+        let arcadeTimeLimit = 0;
+        let arcadeTimerInterval = null;
+        let arcadeCurrentCard = null;
 
         const gridEl = document.getElementById('memory-grid');
         const cardArea = document.getElementById('current-card-area');
@@ -409,6 +595,23 @@
         const modal = document.getElementById('modal');
         const quizArea = document.getElementById('quiz-area');
         const actionBtn = document.getElementById('action-btn');
+        const workingToggle = document.getElementById('toggle-working');
+        const soundToggle = document.getElementById('toggle-sound');
+        const arcadeTimerEl = document.getElementById('arcade-timer');
+        const arcadeTimeDisplay = document.getElementById('arcade-time-display');
+        const arcadeTimerFill = document.getElementById('arcade-timer-fill');
+
+        // --- SOUND HANDLING ---
+
+        function playSound(name) {
+            if (!soundEnabled) return;
+            const audio = document.getElementById('sound-' + name);
+            if (!audio) return;
+            try {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            } catch (_) {}
+        }
 
         // --- CORE FUNCTIONS ---
 
@@ -416,75 +619,176 @@
             gridEl.innerHTML = '';
             tableSize = levels[currentLevel].tableSize;
 
-            // Reset memory array based on table size and mode
-            memory = new Array(tableSize).fill(null); 
-            if(levels[currentLevel].mode === 'chaining') {
-                for(let i=0; i<tableSize; i++) memory[i] = [];
+            memory = new Array(tableSize).fill(null);
+            if (levels[currentLevel].mode === 'chaining') {
+                for (let i = 0; i < tableSize; i++) {
+                    memory[i] = [];
+                }
             }
 
-            // Set grid columns dynamically for better display of Mod 13
-            gridEl.style.gridTemplateColumns = `repeat(auto-fit, minmax(calc(800px / ${tableSize}), 1fr))`;
-
-            // Generate Slots
             for (let i = 0; i < tableSize; i++) {
                 const slot = document.createElement('div');
                 slot.className = 'memory-slot';
                 slot.dataset.index = i;
-                slot.onclick = () => handleSlotClick(i); 
-                
+                slot.setAttribute('role', 'gridcell');
+                slot.setAttribute('aria-label', `Index ${i}`);
+                slot.tabIndex = 0;
+
+                slot.addEventListener('click', () => handleSlotClick(i));
+                slot.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSlotClick(i);
+                    }
+                });
+
                 const indexLabel = document.createElement('div');
                 indexLabel.className = 'slot-index';
                 indexLabel.innerText = `Idx ${i}`;
-                
+
                 slot.appendChild(indexLabel);
                 gridEl.appendChild(slot);
             }
-            
-            // Pre-load data if in search mode
+
             if (levels[currentLevel].mode === 'search') {
                 levels[currentLevel].preLoadedData.forEach(data => {
-                    updateMemoryVisuals(data.index, data, true); // true = is preloading
+                    updateMemoryVisuals(data.index, data, { isPreloading: true });
                 });
             }
         }
 
+        function updateArcadeTimerUI() {
+            const seconds = Math.max(0, Math.ceil(arcadeTimeRemaining / 1000));
+            arcadeTimeDisplay.textContent = seconds;
+            const ratio = arcadeTimeLimit > 0 ? arcadeTimeRemaining / arcadeTimeLimit : 0;
+            arcadeTimerFill.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`;
+        }
+
+        function startArcadeMode() {
+            const levelData = levels[currentLevel];
+            arcadeActive = true;
+            arcadeTimeLimit = levelData.timeLimitMs || 30000;
+            arcadeTimeRemaining = arcadeTimeLimit;
+
+            arcadeTimerEl.classList.remove('hidden');
+            updateArcadeTimerUI();
+
+            if (arcadeTimerInterval) {
+                clearInterval(arcadeTimerInterval);
+            }
+
+            arcadeTimerInterval = setInterval(() => {
+                arcadeTimeRemaining -= 1000;
+                if (arcadeTimeRemaining <= 0) {
+                    arcadeTimeRemaining = 0;
+                    updateArcadeTimerUI();
+                    endArcadeLevel();
+                } else {
+                    updateArcadeTimerUI();
+                }
+            }, 1000);
+
+            generateArcadeCard();
+        }
+
+        function stopArcadeMode() {
+            arcadeActive = false;
+            if (arcadeTimerInterval) {
+                clearInterval(arcadeTimerInterval);
+                arcadeTimerInterval = null;
+            }
+            arcadeTimerEl.classList.add('hidden');
+        }
+
+        function endArcadeLevel() {
+            if (!arcadeActive) return;
+            stopArcadeMode();
+            displayFeedback("Time up! Retro wave complete. Final arcade score: " + score, true);
+            playSound('levelup');
+            endLevel();
+        }
+
+        function generateArcadeCard() {
+            // Generate a random key in a nice range (retro invader ID)
+            const key = Math.floor(Math.random() * 90) + 10; // 10–99
+            arcadeCurrentCard = {
+                key,
+                value: "👾 Invader #" + key
+            };
+            showCard(); // will render using arcadeCurrentCard
+        }
+
         function showCard() {
             const levelData = levels[currentLevel];
-            
             if (levelData.mode === 'quiz') return;
 
-            if (currentCardIndex >= levelData.cards.length) {
+            if (levelData.mode !== 'arcade' && currentCardIndex >= levelData.cards.length) {
                 endLevel();
                 return;
             }
 
-            const cardData = levelData.cards[currentCardIndex];
+            let cardData;
+            if (levelData.mode === 'arcade') {
+                cardData = arcadeCurrentCard;
+            } else {
+                cardData = levelData.cards[currentCardIndex];
+            }
+
             const mod = levelData.tableSize;
-            
-            let cardContent = `<div>KEY: ${cardData.key}</div>`;
-            let instruction;
+            const baseHash = cardData.key % mod;
+            const division = Math.floor(cardData.key / mod);
+            const remainder = baseHash;
+
+            let workingHtml = "";
+            if (showWorking) {
+                workingHtml = `
+                    <div class="data-card-working">
+                        ${cardData.key} ÷ ${mod} = ${division} remainder ${remainder}<br>
+                        ${cardData.key} % ${mod} = ${remainder}
+                    </div>
+                `;
+            } else {
+                const showHash = (levelData.mode === 'search' || levelData.mode === 'arcade') ? baseHash : "?";
+                workingHtml = `
+                    <div class="data-card-working">
+                        HASH: ${cardData.key} % ${mod} = ${showHash}
+                    </div>
+                `;
+            }
 
             if (levelData.mode === 'search') {
-                // Search mode must show the hash result for quick retrieval
-                const hash = cardData.key % mod;
-                instruction = `HASH: ${cardData.key} % ${mod} = ${hash}`;
-
                 cardArea.innerHTML = `
-                    <div class="data-card" style="background: ${getComputedStyle(document.documentElement).getPropertyValue('--highlight')}; color: #111;">
-                        <span style="font-size:0.8em;">FIND THIS KEY:</span>
-                        ${cardContent}
-                        <div style="font-size:0.6em; background:rgba(0,0,0,0.3); margin-top:5px; padding:2px;">${instruction}</div>
-                    </div>`;
+                    <div class="data-card" style="background: var(--highlight); color: #111;">
+                        <div class="data-card-main">
+                            <span style="font-size:0.8em;">FIND THIS KEY:</span><br>
+                            KEY: ${cardData.key}
+                        </div>
+                        <div class="data-card-sub">
+                            Use the hash to jump to the starting index and locate the record.
+                        </div>
+                        ${workingHtml}
+                    </div>
+                `;
+            } else if (levelData.mode === 'arcade') {
+                cardArea.innerHTML = `
+                    <div class="data-card" style="background: #f38ba8; color: #111;">
+                        <div class="data-card-main">
+                            👾 INVADER INCOMING<br>KEY: ${cardData.key}
+                        </div>
+                        <div class="data-card-sub">
+                            Place the invader using Key MOD ${mod} with linear probing before time runs out!
+                        </div>
+                        ${workingHtml}
+                    </div>
+                `;
             } else {
-                // *** IMPLEMENTATION: Hiding the hash result to force manual calculation ***
-                instruction = `HASH: ${cardData.key} % ${mod} = ?`;
-
                 cardArea.innerHTML = `
                     <div class="data-card">
-                        ${cardContent}
-                        <div style="font-size:0.6em; font-weight:normal; margin-top:5px;">${cardData.value}</div>
-                        <div style="font-size:0.6em; background:rgba(0,0,0,0.3); margin-top:5px; padding:2px;">${instruction}</div>
-                    </div>`;
+                        <div class="data-card-main">KEY: ${cardData.key}</div>
+                        <div class="data-card-sub">${cardData.value}</div>
+                        ${workingHtml}
+                    </div>
+                `;
             }
         }
 
@@ -494,205 +798,279 @@
             slotEl.classList.add(className);
             setTimeout(() => {
                 slotEl.classList.remove(className);
-            }, 500);
+            }, 450);
+        }
+
+        function highlightProbePath(pathIndices) {
+            pathIndices.forEach((idx, step) => {
+                const slotEl = gridEl.children[idx];
+                setTimeout(() => {
+                    slotEl.classList.add('slot-probe-path');
+                    setTimeout(() => slotEl.classList.remove('slot-probe-path'), 400);
+                }, step * 120);
+            });
         }
 
         function handleSlotClick(clickedIndex) {
             const levelData = levels[currentLevel];
             if (levelData.mode === 'quiz') return;
 
-            const currentCard = levelData.cards[currentCardIndex];
+            const currentCard = (levelData.mode === 'arcade')
+                ? arcadeCurrentCard
+                : levelData.cards[currentCardIndex];
+
             const mod = levelData.tableSize;
-            const rawHash = currentCard.key % mod; 
+            const rawHash = currentCard.key % mod;
+
             let correctIndex = -1;
             let success = false;
             let msg = "Incorrect.";
 
-            // --- LOGIC ENGINE ---
             if (levelData.mode === 'search') {
-                // In search mode, the correct index is the one where the item was pre-loaded (handle collisions if present)
-                correctIndex = currentCard.index; // This is the final location of the data
-                
+                correctIndex = currentCard.index;
                 if (clickedIndex === correctIndex) {
                     success = true;
-                    msg = `SUCCESS! Key ${currentCard.key} retrieved instantly at Index ${correctIndex}. O(1) Time!`;
+                    msg = `SUCCESS! Key ${currentCard.key} found at Index ${correctIndex}. Lookup: O(1) on average.`;
                     score += 15;
+                    playSound('correct');
                 } else {
-                    msg = `Key not found at Index ${clickedIndex}. The key's hash is ${rawHash}.`;
+                    msg = `Key not found at Index ${clickedIndex}. Start from hash ${rawHash} and follow the table.`;
                     score = Math.max(0, score - 5);
+                    playSound('wrong');
                 }
-            } 
-            else { // Insertion modes (basic, probing, chaining)
+            } else {
                 if (levelData.mode === 'basic') {
                     correctIndex = rawHash;
-                } 
-                else if (levelData.mode === 'probing') {
+                } else if (levelData.mode === 'probing' || levelData.mode === 'arcade') {
                     let probe = rawHash;
                     let loopGuard = 0;
                     while (memory[probe] !== null && loopGuard < mod + 1) {
-                        probe = (probe + 1) % mod; 
+                        probe = (probe + 1) % mod;
                         loopGuard++;
                     }
                     correctIndex = probe;
-                } 
-                else if (levelData.mode === 'chaining') {
+
+                    const path = [];
+                    let idx = rawHash;
+                    while (true) {
+                        path.push(idx);
+                        if (idx === correctIndex) break;
+                        idx = (idx + 1) % mod;
+                    }
+                    highlightProbePath(path);
+                } else if (levelData.mode === 'chaining') {
                     correctIndex = rawHash;
                 }
 
-                // --- VALIDATION ---
                 if (clickedIndex === correctIndex) {
                     success = true;
-                    score += 10;
-                    msg = "Correct Allocation!";
+                    score += (levelData.mode === 'arcade') ? 15 : 10;
+                    msg = levelData.mode === 'arcade'
+                        ? "Nice shot! Invader stored."
+                        : "Correct allocation!";
                     updateMemoryVisuals(clickedIndex, currentCard);
+                    playSound('correct');
                 } else {
                     score = Math.max(0, score - 5);
-                    if (levelData.mode === 'basic') msg = `Wrong! ${currentCard.key} % ${mod} = ${rawHash}`;
-                    if (levelData.mode === 'probing') msg = `Collision! You must probe to the next EMPTY slot (Index ${correctIndex}).`;
-                    if (levelData.mode === 'chaining') msg = `Wrong! In Chaining, stick to the calculated index (${rawHash}) even if full.`;
+                    if (levelData.mode === 'basic') {
+                        msg = `Wrong! ${currentCard.key} % ${mod} = ${rawHash}.`;
+                    } else if (levelData.mode === 'probing' || levelData.mode === 'arcade') {
+                        msg = `Collision resolution needed. Start at ${rawHash} and probe to the next empty slot (Index ${correctIndex}).`;
+                    } else if (levelData.mode === 'chaining') {
+                        msg = `Wrong! In chaining, always store at the hashed index (${rawHash}) and add to the list.`;
+                    }
+                    playSound('wrong');
                 }
             }
-            
-            // --- AFTERMATH ---
+
             pulseSlot(clickedIndex, success);
             displayFeedback(msg, success);
             updateScore();
-            
+
             if (success) {
-                currentCardIndex++;
-                showCard();
+                if (levelData.mode === 'arcade') {
+                    generateArcadeCard();
+                } else {
+                    currentCardIndex++;
+                    showCard();
+                }
             }
         }
 
-        function updateMemoryVisuals(index, card, isPreloading = false) {
-            const slotEl = gridEl.children[index];
-            const levelData = levels[currentLevel];
+        function renderStoredKey(slotEl, card, { faded }) {
+            const item = document.createElement('div');
+            item.className = 'stored-item';
+            item.innerText = card.key;
+            if (faded) {
+                item.style.backgroundColor = 'var(--slot-bg)';
+                item.style.color = 'var(--highlight)';
+            }
+            slotEl.appendChild(item);
+        }
 
-            if (levelData.mode === 'chaining' || (levelData.mode === 'search' && isPreloading)) {
-                if (levelData.mode === 'chaining') {
-                    memory[index].push(card);
-                } else if (levels[currentLevel].mode === 'search' && isPreloading) {
-                    memory[index] = card; 
-                }
-                
-                if (levels[currentLevel].mode === 'chaining' && memory[index].length > 1) {
+        function updateMemoryVisuals(index, card, options = {}) {
+            const { isPreloading = false } = options;
+            const levelData = levels[currentLevel];
+            const slotEl = gridEl.children[index];
+
+            if (levelData.mode === 'chaining') {
+                memory[index].push(card);
+                if (memory[index].length > 1) {
                     const arrow = document.createElement('div');
                     arrow.className = 'linked-arrow';
-                    arrow.innerHTML = '&#8595;'; 
+                    arrow.innerHTML = '&#8595;';
                     slotEl.appendChild(arrow);
                 }
-                
-                const item = document.createElement('div');
-                item.className = 'stored-item';
-                item.innerText = card.key;
-                slotEl.appendChild(item);
-                
-                if (isPreloading) {
-                    // Ensure pre-loaded items are visibly faded or different
-                    item.style.backgroundColor = 'var(--slot-bg)';
-                    item.style.color = 'var(--highlight)';
-                }
-
-            } else {
-                memory[index] = card;
-                const item = document.createElement('div');
-                item.className = 'stored-item';
-                item.innerText = card.key;
-                slotEl.appendChild(item);
+                renderStoredKey(slotEl, card, { faded: false });
+                return;
             }
+
+            if (levelData.mode === 'search' && isPreloading) {
+                memory[index] = card;
+                renderStoredKey(slotEl, card, { faded: true });
+                return;
+            }
+
+            memory[index] = card;
+            renderStoredKey(slotEl, card, { faded: false });
         }
 
         function displayFeedback(msg, isSuccess) {
             feedback.innerText = msg;
             feedback.style.color = isSuccess ? "var(--success)" : "var(--error)";
-            setTimeout(() => feedback.innerText = "", 3000);
+            setTimeout(() => {
+                if (feedback.innerText === msg) {
+                    feedback.innerText = "";
+                }
+            }, 4000);
         }
 
         function updateScore() {
             document.getElementById('score').innerText = score;
         }
 
-        // --- QUIZ LOGIC (Unchanged) ---
+        // --- QUIZ LOGIC ---
+
+        let quizStarted = false;
 
         function startQuiz() {
             currentQuizIndex = 0;
+            quizLocked = false;
+            quizStarted = true;
             renderQuestion();
+            playSound('levelup');
         }
 
         function renderQuestion() {
             if (currentQuizIndex >= examQuestions.length) {
                 document.getElementById('modal-title').innerText = "Assessment Complete";
                 document.getElementById('modal-desc').innerText = `Final Score: ${score}`;
-                document.getElementById('modal-theory').innerHTML = "You have mastered Hash Tables, Collisions, and Dictionaries.";
+                document.getElementById('modal-theory').innerHTML =
+                    "You have practised hash table insertion, collision handling, retrieval and dictionary-style usage. Review any explanations you found tricky, then conquer the real paper.";
                 quizArea.classList.add('hidden');
-                
+                quizArea.innerHTML = "";
                 actionBtn.classList.remove('hidden');
                 actionBtn.innerText = "Reset System";
-                actionBtn.removeEventListener('click', startGame);
-                actionBtn.addEventListener('click', () => location.reload());
+                actionBtn.dataset.action = "reset";
                 return;
             }
 
             const q = examQuestions[currentQuizIndex];
-            let html = `<div class="quiz-question">Q${currentQuizIndex+1}: ${q.q}</div><div class="quiz-options">`;
-            
-            q.options.forEach((opt, idx) => {
-                html += `<div class="quiz-option" id="opt-${idx}" onclick="handleQuizAnswer(${idx})">${opt}</div>`;
-            });
-            html += `</div>`;
+
+            let html = `
+                <div class="quiz-question">Q${currentQuizIndex + 1}: ${q.q}</div>
+                <div class="quiz-options">
+                    ${q.options.map((opt, idx) =>
+                        `<button type="button" class="quiz-option" data-index="${idx}">${opt}</button>`
+                    ).join('')}
+                </div>
+                <div id="quiz-explanation" class="quiz-explanation hidden"></div>
+                <button id="quiz-next-btn" type="button" class="start-btn quiz-next-btn" disabled>Next Question</button>
+            `;
 
             quizArea.innerHTML = html;
+            quizArea.classList.remove('hidden');
+            quizLocked = false;
         }
 
-        window.handleQuizAnswer = function(selectedIdx) {
-            const opts = document.querySelectorAll('.quiz-option');
-            opts.forEach(o => o.onclick = null);
+        function handleQuizAnswer(selectedIdx) {
+            if (quizLocked) return;
+            quizLocked = true;
 
             const q = examQuestions[currentQuizIndex];
+            const opts = quizArea.querySelectorAll('.quiz-option');
+
+            opts.forEach(o => {
+                o.disabled = true;
+            });
 
             if (selectedIdx === q.answer) {
-                document.getElementById(`opt-${selectedIdx}`).classList.add('correct');
+                opts[selectedIdx].classList.add('correct');
                 score += 20;
                 displayFeedback("Correct!", true);
+                playSound('correct');
             } else {
-                document.getElementById(`opt-${selectedIdx}`).classList.add('wrong');
-                document.getElementById(`opt-${q.answer}`).classList.add('correct');
+                opts[selectedIdx].classList.add('wrong');
+                opts[q.answer].classList.add('correct');
                 score = Math.max(0, score - 10);
-                displayFeedback("Incorrect", false);
+                displayFeedback("Incorrect.", false);
+                playSound('wrong');
             }
             updateScore();
 
-            setTimeout(() => {
-                alert(`Explanation: ${q.explanation}`);
-                currentQuizIndex++;
-                renderQuestion();
-            }, 500);
+            const expEl = document.getElementById('quiz-explanation');
+            if (expEl) {
+                expEl.textContent = "Explanation: " + q.explanation;
+                expEl.classList.remove('hidden');
+            }
+
+            const nextBtn = document.getElementById('quiz-next-btn');
+            if (nextBtn) {
+                nextBtn.disabled = false;
+            }
+        }
+
+        function goToNextQuestion() {
+            currentQuizIndex++;
+            renderQuestion();
         }
 
         // --- FLOW CONTROL ---
 
         function startGame() {
             try {
+                // Any time we start a level, make sure arcade timers are off
+                stopArcadeMode();
                 modal.classList.add('hidden');
-                
+
                 document.getElementById('level-display').innerText = currentLevel + 1;
                 document.getElementById('mode-name').innerText = levels[currentLevel].name;
-                
-                if (levels[currentLevel].mode === 'quiz') {
-                    gridEl.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--accent); font-size: 2em; opacity:0.5;">THEORY MODE ACTIVE</div>';
-                    cardArea.innerHTML = '<div style="color:#fff;">Calculating Theory Knowledge...</div>';
-                    
+
+                const levelData = levels[currentLevel];
+
+                if (levelData.mode === 'quiz') {
+                    gridEl.innerHTML =
+                        '<div style="grid-column: 1/-1; text-align: center; padding: 50px; color: var(--accent); font-size: 1.6em; opacity:0.6;">THEORY MODE ACTIVE</div>';
+                    cardArea.innerHTML =
+                        '<div style="color:#fff; font-size:0.95em;">Calculating Theory Knowledge...</div>';
+
                     modal.classList.remove('hidden');
                     document.getElementById('modal-title').innerText = "BOSS LEVEL";
-                    document.getElementById('modal-desc').innerText = "Multiple Choice Exam Questions";
-                    document.getElementById('modal-theory').innerHTML = "Answer correctly for bonus points. Wrong answers lose points.";
-                    
+                    document.getElementById('modal-desc').innerText = "Multiple-choice exam-style questions";
+                    document.getElementById('modal-theory').innerHTML =
+                        "Answer correctly for bonus points. Wrong answers lose points. Read the explanations – they mirror how mark schemes award marks.";
+
                     quizArea.classList.remove('hidden');
-                    actionBtn.classList.add('hidden'); 
+                    actionBtn.classList.add('hidden');
                     startQuiz();
+                } else if (levelData.mode === 'arcade') {
+                    initGrid();
+                    startArcadeMode();
+                    playSound('levelup');
                 } else {
                     initGrid();
                     showCard();
+                    playSound('levelup');
                 }
             } catch (e) {
                 alert("Error starting game: " + e.message + "\nCheck browser console for details.");
@@ -705,22 +1083,68 @@
             if (currentLevel < levels.length) {
                 document.getElementById('modal-title').innerText = `Level ${currentLevel} Complete`;
                 document.getElementById('modal-desc').innerText = `Next up: ${levels[currentLevel].name}`;
-                document.getElementById('modal-theory').innerHTML = `<strong>New Rule:</strong> ${levels[currentLevel].theory}`;
-                
+                document.getElementById('modal-theory').innerHTML =
+                    `<strong>New Rule:</strong> ${levels[currentLevel].theory}`;
+
                 currentCardIndex = 0;
                 actionBtn.innerText = "Start Next Level";
                 actionBtn.classList.remove('hidden');
+                actionBtn.dataset.action = "start";
                 quizArea.classList.add('hidden');
-                
+
                 modal.classList.remove('hidden');
+                actionBtn.focus();
+                playSound('levelup');
+            } else {
+                // Shouldn't normally get here because quiz is final and doesn't call endLevel in same way
+                startGame();
             }
         }
 
         // --- SAFE INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', function() {
-            actionBtn.addEventListener('click', startGame);
-        });
 
+        document.addEventListener('DOMContentLoaded', function () {
+            actionBtn.addEventListener('click', () => {
+                const mode = actionBtn.dataset.action;
+                playSound('click');
+                if (mode === "start") {
+                    startGame();
+                } else if (mode === "reset") {
+                    location.reload();
+                }
+            });
+
+            if (workingToggle) {
+                workingToggle.addEventListener('change', (e) => {
+                    showWorking = e.target.checked;
+                    showCard();
+                });
+            }
+
+            if (soundToggle) {
+                soundToggle.addEventListener('change', (e) => {
+                    soundEnabled = e.target.checked;
+                    if (soundEnabled) playSound('click');
+                });
+            }
+
+            quizArea.addEventListener('click', (e) => {
+                const option = e.target.closest('.quiz-option');
+                if (option) {
+                    const idx = Number(option.dataset.index);
+                    if (!Number.isNaN(idx)) {
+                        handleQuizAnswer(idx);
+                    }
+                    return;
+                }
+
+                const nextBtn = e.target.closest('#quiz-next-btn');
+                if (nextBtn && !nextBtn.disabled) {
+                    playSound('click');
+                    goToNextQuestion();
+                }
+            });
+        });
     </script>
 </body>
 </html>
